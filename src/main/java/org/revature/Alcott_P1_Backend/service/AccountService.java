@@ -5,6 +5,7 @@ import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
 import org.revature.Alcott_P1_Backend.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,24 +13,39 @@ public class AccountService {
 
     private AccountRepository accountRepository;
 
+    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
+
     @Autowired
     public AccountService(AccountRepository accountRepository){
         this.accountRepository = accountRepository;
     }
 
-    public Account createNewUser(Account account) throws DuplicateUsernameException {
+    public Account createNewUser(Account account) throws DuplicateUsernameException, InvalidUsernameOrPasswordException {
 
         if(accountRepository.existsByUsername(account.getUsername()))
             throw new DuplicateUsernameException("Duplicate username");
-        // TODO: add some password regex here~
+        // Password must be between 8 and 25 characters and contain both a symbol and a number
+        if(!account.getPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,25}$"))
+            throw new InvalidUsernameOrPasswordException("Password must be between 8 and 25 characters AND include both a number and special character (@$!%*#?&)");
 
+        account.setPassword(encoder.encode(account.getPassword()));
+        account.setRole("USER");
         return accountRepository.save(account);
     }
 
     public Account login(String username, String password) throws InvalidUsernameOrPasswordException {
-        if(accountRepository.existsByUsernameAndPassword(username, password))
-            return accountRepository.findByUsernameAndPassword(username, password);
+        String encryptedPassword = "";
+        if(accountRepository.existsByUsername(username)) {
+            encryptedPassword = accountRepository.findByUsername(username).getPassword();
+        }
+
+        if(encoder.matches(password, encryptedPassword))
+            return accountRepository.findByUsernameAndPassword(username, encryptedPassword);
         else throw new InvalidUsernameOrPasswordException("Invalid username or password");
+    }
+
+    public Account getUserByUsername(String username){
+        return accountRepository.findByUsername(username);
     }
 
 }

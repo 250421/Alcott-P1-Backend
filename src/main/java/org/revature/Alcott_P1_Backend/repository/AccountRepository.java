@@ -28,4 +28,6 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
      * @return The account if it exists.
      */
     public Account findByUsernameAndPassword(String username, String password);
+
+    public Account findByUsername(String username);
 }
