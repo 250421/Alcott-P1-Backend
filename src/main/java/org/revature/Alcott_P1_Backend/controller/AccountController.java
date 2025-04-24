@@ -1,12 +1,15 @@
 package org.revature.Alcott_P1_Backend.controller;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.revature.Alcott_P1_Backend.entity.Account;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
 import org.revature.Alcott_P1_Backend.model.NewUserRequest;
 import org.revature.Alcott_P1_Backend.service.AccountService;
+import org.revature.Alcott_P1_Backend.service.AuthService;
 import org.revature.Alcott_P1_Backend.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +21,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -32,6 +38,10 @@ public class AccountController {
     SessionService sessionService;
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    AuthService authService;
+
 
     @PostMapping("/sign-up")
     public ResponseEntity<String> registerNewUser(@RequestBody NewUserRequest newUser) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
@@ -47,28 +57,42 @@ public class AccountController {
     }
 
     @PostMapping("/sign-in")
-    public ResponseEntity<String> login(@RequestBody NewUserRequest account, HttpServletRequest request) {
+    public ResponseEntity<?> login(@RequestBody NewUserRequest request, HttpServletRequest httpRequest) {
         try {
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(account.getUsername(), account.getPassword());
-
-            Authentication auth = authenticationManager.authenticate(authToken);
-
+            Authentication auth = authService.authenticateUser(request.getUsername(), request.getPassword());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            request.getSession(true); // true = create if not exists
+            // Create session manually
+            HttpSession session = httpRequest.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                    SecurityContextHolder.getContext());
 
-            return ResponseEntity.ok("Login successful");
-
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            return ResponseEntity.ok(Map.of("message", "Login successful"));
+        } catch (AuthenticationException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid username or password"));
         }
     }
 
     @PostMapping("/sign-out")
-    public ResponseEntity<String> logout() {
-        //sessionService.endSession();
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        // Invalidate session
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        // Clear Spring Security context
+        SecurityContextHolder.clearContext();
+
+        // Optionally clear the JSESSIONID cookie
+        Cookie cookie = new Cookie("JSESSIONID", null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0); // remove cookie
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok().body(Map.of("message", "Logged out successfully"));
     }
 
     @GetMapping("/dashboard")
@@ -77,6 +101,12 @@ public class AccountController {
         session.setAttribute("username", username);
         model.addAttribute("user", username);
         return "dashboard";
+    }
+
+    @GetMapping("")
+    public ResponseEntity<String> authenticate(){
+        authService.authenticateUser()
+        return ResponseEntity.ok("WIP");
     }
 
 

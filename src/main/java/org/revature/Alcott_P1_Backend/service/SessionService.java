@@ -14,7 +14,7 @@ public class SessionService {
         this.sessionRepository = sessionRepository;
     }
 
-    public boolean endSession(){
+    public boolean authenticate(){
         return false;
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,16 +34,9 @@ public class SecurityConfig{
                         .disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().permitAll())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
-                        .maximumSessions(1))
-                .logout(logout -> logout
-                        .logoutUrl("/sign-out")
-                        .logoutSuccessUrl("/login?logout"))
-                .formLogin(form -> form
-                        .loginPage("/sign-in") // custom login page (if used)
-                        .defaultSuccessUrl("/dashboard", true)
-                        .permitAll()
-                );
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(1));
+
 
         return http.build();
     }
