@@ -3,6 +3,7 @@ package org.revature.Alcott_P1_Backend.service;
 import org.revature.Alcott_P1_Backend.entity.Account;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
+import org.revature.Alcott_P1_Backend.model.NewUserRequest;
 import org.revature.Alcott_P1_Backend.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,8 +21,11 @@ public class AccountService {
         this.accountRepository = accountRepository;
     }
 
-    public Account createNewUser(Account account) throws DuplicateUsernameException, InvalidUsernameOrPasswordException {
-
+    public Account createNewUser(NewUserRequest account) throws DuplicateUsernameException, InvalidUsernameOrPasswordException {
+        // checks
+        if(account.getUsername().length() < 5 || account.getUsername().length() > 25){
+            throw new InvalidUsernameOrPasswordException("Username must be between 5 and 25 characters");
+        }
         if(accountRepository.existsByUsername(account.getUsername()))
             throw new DuplicateUsernameException("Duplicate username");
         // Password must be between 8 and 25 characters and contain both a symbol and a number
@@ -29,15 +33,23 @@ public class AccountService {
             throw new InvalidUsernameOrPasswordException("Password must be between 8 and 25 characters AND include both a number and special character (@$!%*#?&)");
 
         account.setPassword(encoder.encode(account.getPassword()));
-        account.setRole("USER");
-        return accountRepository.save(account);
+
+        return accountRepository.save(new Account(
+            account.getUsername(), account.getPassword(), "USER"
+        ));
     }
 
     public Account login(String username, String password) throws InvalidUsernameOrPasswordException {
+        // checks
+        if(username.isEmpty() || password.isEmpty()){
+            throw new InvalidUsernameOrPasswordException("Username and password fields must not be empty");
+        }
+
         String encryptedPassword = "";
         if(accountRepository.existsByUsername(username)) {
             encryptedPassword = accountRepository.findByUsername(username).getPassword();
         }
+        else throw new InvalidUsernameOrPasswordException("Username not found");
 
         if(encoder.matches(password, encryptedPassword))
             return accountRepository.findByUsernameAndPassword(username, encryptedPassword);

@@ -27,26 +27,8 @@ public class IMSController {
         return ResponseEntity.ok(accountService.getUserByUsername("admin"));
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> registerNewUser(@RequestBody Account account) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
-        return ResponseEntity.ok(accountService.createNewUser(account).getUsername());
-    }
 
-    @PostMapping("/login")
-    public ResponseEntity<Account> login(@RequestBody Account account) throws InvalidUsernameOrPasswordException {
-        return ResponseEntity.ok(accountService.login(account.getUsername(), account.getPassword()));
-    }
 
-    @ExceptionHandler(DuplicateUsernameException.class)
-    @ResponseStatus(value = HttpStatus.CONFLICT)
-    public String duplicateUsernameExceptionHandler(DuplicateUsernameException ex){
-        return ex.getMessage();
-    }
 
-    @ExceptionHandler(InvalidUsernameOrPasswordException.class)
-    @ResponseStatus(value = HttpStatus.CONFLICT)
-    public String invalidUsernameOrPasswordExceptionHandler(InvalidUsernameOrPasswordException ex){
-        return ex.getMessage();
-    }
 
 }
