@@ -4,6 +4,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.revature.Alcott_P1_Backend.entity.Account;
+import org.revature.Alcott_P1_Backend.entity.Session;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
 import org.revature.Alcott_P1_Backend.model.NewUserRequest;
@@ -22,6 +24,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -59,10 +62,21 @@ public class AccountController {
             Authentication auth = authService.authenticateUser(request.getUsername(), request.getPassword());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            // Create session manually
+            // Create session
             HttpSession session = httpRequest.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                     SecurityContextHolder.getContext());
+
+            String sessionId = session.getId();
+            Account user = accountService.getUserByUsername(request.getUsername());
+
+            Session dbSession = new Session();
+            dbSession.setSessionId(sessionId);
+            dbSession.setAccount(user);
+            dbSession.setCreatedAt(LocalDateTime.now());
+            dbSession.setExpiresAt(LocalDateTime.now().plusMinutes(3));
+
+            sessionService.createNewSession(dbSession);
 
             return ResponseEntity.ok(Map.of("message", "Login successful"));
         } catch (AuthenticationException ex) {
@@ -72,24 +86,32 @@ public class AccountController {
     }
 
     @PostMapping("/sign-out")
-    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        // Invalidate session
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        try {
+            // Invalidating session
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                String sessionId = session.getId();
+                sessionService.deleteBySessionId(sessionId);
+
+                session.invalidate();
+            }
+
+            // Clearing Spring Security context
+            SecurityContextHolder.clearContext();
+
+            Cookie cookie = new Cookie("JSESSIONID", null);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            cookie.setMaxAge(0); // remove cookie
+            response.addCookie(cookie);
+
+            return ResponseEntity.ok().body(Map.of("message", "Logged out successfully"));
         }
-
-        // Clear Spring Security context
-        SecurityContextHolder.clearContext();
-
-        // Optionally clear the JSESSIONID cookie
-        Cookie cookie = new Cookie("JSESSIONID", null);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(0); // remove cookie
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok().body(Map.of("message", "Logged out successfully"));
+        catch (Exception e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid session"));
+        }
     }
 
     @GetMapping("/dashboard")

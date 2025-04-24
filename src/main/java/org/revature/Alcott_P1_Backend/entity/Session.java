@@ -2,50 +2,31 @@ package org.revature.Alcott_P1_Backend.entity;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "SPRING_SESSION")
 public class Session {
 
     @Id
-    @Column(name = "PRIMARY_ID")
-    private String primaryId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "SESSION_ID")
     private String sessionId;
 
-    @Column(name = "CREATION_TIME")
-    private Long creationTime;
-
-    @Column(name = "LAST_ACCESS_TIME")
-    private Long lastAccessTime;
-
-    @Column(name = "MAX_INACTIVE_INTERVAL")
-    private Integer maxInactiveInterval;
-
-    @Column(name = "EXPIRY_TIME")
-    private Long expiryTime;
-
-    @Column(name = "PRINCIPAL_NAME")
-    private String principalName;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "PRINCIPAL_NAME", referencedColumnName = "username", insertable = false, updatable = false)
+    @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    public Account getAccount() {
-        return account;
+    private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
+
+    public Long getId() {
+        return id;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
-    }
-
-    public String getPrimaryId() {
-        return primaryId;
-    }
-
-    public void setPrimaryId(String primaryId) {
-        this.primaryId = primaryId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getSessionId() {
@@ -56,43 +37,27 @@ public class Session {
         this.sessionId = sessionId;
     }
 
-    public Long getCreationTime() {
-        return creationTime;
+    public Account getAccount() {
+        return account;
     }
 
-    public void setCreationTime(Long creationTime) {
-        this.creationTime = creationTime;
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
-    public Long getLastAccessTime() {
-        return lastAccessTime;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setLastAccessTime(Long lastAccessTime) {
-        this.lastAccessTime = lastAccessTime;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public Integer getMaxInactiveInterval() {
-        return maxInactiveInterval;
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
     }
 
-    public void setMaxInactiveInterval(Integer maxInactiveInterval) {
-        this.maxInactiveInterval = maxInactiveInterval;
-    }
-
-    public Long getExpiryTime() {
-        return expiryTime;
-    }
-
-    public void setExpiryTime(Long expiryTime) {
-        this.expiryTime = expiryTime;
-    }
-
-    public String getPrincipalName() {
-        return principalName;
-    }
-
-    public void setPrincipalName(String principalName) {
-        this.principalName = principalName;
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
     }
 }
