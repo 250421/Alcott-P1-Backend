@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -104,9 +105,22 @@ public class AccountController {
     }
 
     @GetMapping("")
-    public ResponseEntity<String> authenticate(){
-        authService.authenticateUser()
-        return ResponseEntity.ok("WIP");
+    public ResponseEntity<?> checkSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false); // false = don't create if not exists
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session is not valid"));
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Session is valid",
+                "user", authentication.getName()
+        ));
     }
 
 
