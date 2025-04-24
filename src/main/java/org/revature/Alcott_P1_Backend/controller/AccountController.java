@@ -46,7 +46,8 @@ public class AccountController {
     @PostMapping("/sign-up")
     public ResponseEntity<String> registerNewUser(@RequestBody NewUserRequest newUser) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
         try {
-            return ResponseEntity.ok(accountService.createNewUser(newUser).getUsername());
+            accountService.createNewUser(newUser);
+            return ResponseEntity.ok("User created successfully");
         }
         catch (InvalidUsernameOrPasswordException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
