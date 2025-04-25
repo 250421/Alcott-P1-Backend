@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccountService {
 
-    private AccountRepository accountRepository;
+    private final AccountRepository accountRepository;
 
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
     @Autowired
     public AccountService(AccountRepository accountRepository){
@@ -23,14 +23,15 @@ public class AccountService {
 
     public Account createNewUser(NewUserRequest account) throws DuplicateUsernameException, InvalidUsernameOrPasswordException {
         // checks
-        if(account.getUsername().length() < 5 || account.getUsername().length() > 25){
-            throw new InvalidUsernameOrPasswordException("Username must be between 5 and 25 characters");
+        // TODO: check for .com.com invalid username
+        if(!account.getUsername().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")){
+            throw new InvalidUsernameOrPasswordException("Username must be a valid email address");
         }
-        if(accountRepository.existsByUsername(account.getUsername()))
-            throw new DuplicateUsernameException("Duplicate username");
+        if(accountRepository.existsByUsername(account.getUsername().toLowerCase()))
+            throw new DuplicateUsernameException("Username already exists");
         // Password must be between 8 and 25 characters and contain both a symbol and a number
         if(!account.getPassword().matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,25}$"))
-            throw new InvalidUsernameOrPasswordException("Password must be between 8 and 25 characters AND include both a number and special character (@$!%*#?&)");
+            throw new InvalidUsernameOrPasswordException("Password must be between 8 and 25 characters and include both a number and special character (@$!%*#?&)");
 
         account.setPassword(encoder.encode(account.getPassword()));
 
@@ -46,7 +47,7 @@ public class AccountService {
         }
 
         String encryptedPassword = "";
-        if(accountRepository.existsByUsername(username)) {
+        if(accountRepository.existsByUsername(username.toLowerCase())) {
             encryptedPassword = accountRepository.findByUsername(username).getPassword();
         }
         else throw new InvalidUsernameOrPasswordException("Username not found");

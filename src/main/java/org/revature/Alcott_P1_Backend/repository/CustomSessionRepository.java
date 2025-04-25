@@ -10,4 +10,8 @@ public interface CustomSessionRepository extends JpaRepository<Session, Integer>
 
     @Transactional
     long deleteBysessionId(String sessionId);
+
+    boolean existsBysessionId(String session_id);
+
+    Session findBysessionId(String session_id);
 }

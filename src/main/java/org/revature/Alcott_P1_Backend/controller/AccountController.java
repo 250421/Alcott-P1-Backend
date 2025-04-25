@@ -7,7 +7,9 @@ import jakarta.servlet.http.HttpSession;
 import org.revature.Alcott_P1_Backend.entity.Account;
 import org.revature.Alcott_P1_Backend.entity.Session;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
+import org.revature.Alcott_P1_Backend.exception.InvalidSessionException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
+import org.revature.Alcott_P1_Backend.model.AuthenticationDTO;
 import org.revature.Alcott_P1_Backend.model.NewUserRequest;
 import org.revature.Alcott_P1_Backend.service.AccountService;
 import org.revature.Alcott_P1_Backend.service.AuthService;
@@ -24,6 +26,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -47,13 +50,13 @@ public class AccountController {
     public ResponseEntity<String> registerNewUser(@RequestBody NewUserRequest newUser) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
         try {
             accountService.createNewUser(newUser);
-            return ResponseEntity.ok("User created successfully");
+            return ResponseEntity.status(201).body("User created successfully");
         }
         catch (InvalidUsernameOrPasswordException e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            return ResponseEntity.status(400).body("Invalid username or password");
         }
         catch (DuplicateUsernameException e){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Username already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
     }
 
@@ -64,7 +67,12 @@ public class AccountController {
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             // Create session
-            HttpSession session = httpRequest.getSession(true);
+            HttpSession session = httpRequest.getSession(false);
+            if (session != null) {
+                return ResponseEntity.status(401)
+                        .body(Map.of("message", "User is already logged in on current session"));
+            }
+            session = httpRequest.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                     SecurityContextHolder.getContext());
 
@@ -75,13 +83,13 @@ public class AccountController {
             dbSession.setSessionId(sessionId);
             dbSession.setAccount(user);
             dbSession.setCreatedAt(LocalDateTime.now());
-            dbSession.setExpiresAt(LocalDateTime.now().plusMinutes(3));
+            dbSession.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
             sessionService.createNewSession(dbSession);
 
             return ResponseEntity.ok(Map.of("message", "Login successful"));
         } catch (AuthenticationException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            return ResponseEntity.status(400)
                     .body(Map.of("message", "Invalid username or password"));
         }
     }
@@ -96,18 +104,23 @@ public class AccountController {
                 sessionService.deleteBySessionId(sessionId);
 
                 session.invalidate();
+
+                // Clearing Spring Security context
+                SecurityContextHolder.clearContext();
+
+                Cookie cookie = new Cookie("JSESSIONID", null);
+                cookie.setPath("/");
+                cookie.setHttpOnly(true);
+                cookie.setMaxAge(0); // remove cookie
+                response.addCookie(cookie);
+
+                return ResponseEntity.ok().body(Map.of("message", "Logged out successfully"));
+            }
+            else {
+                return ResponseEntity.status(401)
+                        .body(Map.of("message", "No active session"));
             }
 
-            // Clearing Spring Security context
-            SecurityContextHolder.clearContext();
-
-            Cookie cookie = new Cookie("JSESSIONID", null);
-            cookie.setPath("/");
-            cookie.setHttpOnly(true);
-            cookie.setMaxAge(0); // remove cookie
-            response.addCookie(cookie);
-
-            return ResponseEntity.ok().body(Map.of("message", "Logged out successfully"));
         }
         catch (Exception e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -115,31 +128,36 @@ public class AccountController {
         }
     }
 
-    @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        session.setAttribute("username", username);
-        model.addAttribute("user", username);
-        return "dashboard";
-    }
 
-    @GetMapping("")
+    @GetMapping("/checkAuthentication")
     public ResponseEntity<?> checkSession(HttpServletRequest request) {
-        HttpSession session = request.getSession(false); // false = don't create if not exists
-        if (session == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session is not valid"));
+        try {
+            if(request.getSession(false) == null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session has expired"));
+            }
+
+            String session = request.getSession(false).getId();
+            String username = request.getRemoteUser();
+            // null checks
+            if (username == null || session == null)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session is not valid"));
+
+            // check the database for session information and match if possible
+            if (sessionService.doesSessionExist(session, username)) {
+                Account account = accountService.getUserByUsername(username);
+                return ResponseEntity.status(200).body(
+                        Map.of("userId", account.getId())
+                );
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
+            }
         }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
+        catch(InvalidSessionException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid Session"));
         }
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Session is valid",
-                "user", authentication.getName()
-        ));
+        catch(InvalidUsernameOrPasswordException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found"));
+        }
     }
 
 
