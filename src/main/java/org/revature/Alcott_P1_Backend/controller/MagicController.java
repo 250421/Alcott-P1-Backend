@@ -49,6 +49,13 @@ public class MagicController {
         );
     }
 
+    @GetMapping("/magic/{magicId}")
+    public ResponseEntity<Magic> getMagicById(@PathVariable("magicId") int id){
+        return ResponseEntity.status(200).body(
+                magicService.getMagicById(id)
+        );
+    }
+
     @PostMapping("/admin/add-magic")
     public ResponseEntity<String> addMagic(@RequestBody Magic newMagic, HttpServletRequest request) {
         //TODO: add correct error responses

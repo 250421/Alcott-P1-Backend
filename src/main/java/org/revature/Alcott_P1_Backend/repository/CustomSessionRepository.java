@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 public interface CustomSessionRepository extends JpaRepository<Session, Integer> {
 
     @Transactional
-    long deleteBysessionId(String sessionId);
+    int deleteBysessionId(String sessionId);
 
     boolean existsBysessionId(String session_id);
 

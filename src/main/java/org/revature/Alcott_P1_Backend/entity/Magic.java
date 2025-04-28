@@ -27,4 +27,6 @@ public class Magic {
 
     private String category;
 
+    private String imageUrl;
+
 }

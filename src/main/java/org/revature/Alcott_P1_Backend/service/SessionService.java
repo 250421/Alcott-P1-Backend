@@ -10,6 +10,9 @@ import org.revature.Alcott_P1_Backend.repository.CustomSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service
@@ -25,10 +28,17 @@ public class SessionService {
         this.customSessionRepository = customSessionRepository;
     }
 
+    @Transactional
     public boolean createNewSession(Session session){
-        customSessionRepository.save(session);
-        // TODO: If persists...
-        return true;
+        try{
+            customSessionRepository.save(session);
+            // TODO: If persists...
+            return true;
+        }catch (Exception e){
+            System.err.println("Error saving session: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public Long deleteBySessionId(String sessionId) throws InvalidSessionException {
@@ -47,7 +57,7 @@ public class SessionService {
             session = customSessionRepository.findBysessionId(sessionId);
         }
         else {
-            throw new InvalidSessionException("Invalid Session");
+            return false;
         }
 
         //check if account exists
@@ -64,4 +74,11 @@ public class SessionService {
     public Session findSessionById(String session_id){
         return customSessionRepository.findBysessionId(session_id);
     }
+
+    public boolean updateSession(Session session){
+        customSessionRepository.save(session);
+        //TODO: if persists...
+        return true;
+    }
+
 }

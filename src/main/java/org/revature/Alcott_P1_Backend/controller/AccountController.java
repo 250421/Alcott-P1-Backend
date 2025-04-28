@@ -58,10 +58,21 @@ public class AccountController {
 
             // Create session
             HttpSession session = httpRequest.getSession(false);
-            if (session != null) {
-                return ResponseEntity.status(401)
-                        .body(Map.of("message", "User is already logged in on current session"));
+
+            if(request.getUsername() == null){
+                return ResponseEntity.status(400)
+                        .body(Map.of("message", "Username cannot be empty"));
             }
+            // else if there is a pre-existing session in the database
+            else if(httpRequest.getSession(false) != null && sessionService.doesSessionExist(httpRequest.getSession(false).getId(), request.getUsername())) {
+                Session currentSession = sessionService.findSessionById(httpRequest.getSession(false).getId());
+                // if the session has not expired yet
+                if(currentSession.getExpiresAt().isAfter(LocalDateTime.now())){
+                    ResponseEntity.status(401)
+                            .body(Map.of("message", "User is already logged in on current session"));
+                }
+            }
+
             session = httpRequest.getSession(true);
             session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                     SecurityContextHolder.getContext());
@@ -78,9 +89,13 @@ public class AccountController {
             sessionService.createNewSession(dbSession);
 
             return ResponseEntity.ok(Map.of("message", "Login successful"));
-        } catch (AuthenticationException ex) {
+
+        } catch (AuthenticationException | InvalidUsernameOrPasswordException ex) {
             return ResponseEntity.status(400)
                     .body(Map.of("message", "Invalid username or password"));
+        } catch (InvalidSessionException e) {
+            return ResponseEntity.status(400)
+                    .body(Map.of("message", "Invalid session"));
         }
     }
 
@@ -126,25 +141,31 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session has expired"));
             }
 
-            String session = request.getSession(false).getId();
+            Session session;
             String username = request.getRemoteUser();
-            // null checks
-            if (username == null || session == null)
+            if(username != null && request.getSession(false) != null && sessionService.doesSessionExist(request.getSession(false).getId(), username)) {
+                session = sessionService.findSessionById(request.getSession(false).getId());
+            }
+            else{
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session is not valid"));
+            }
 
-            request.getSession().
+            if(session.getExpiresAt().isBefore(LocalDateTime.now())){
+                sessionService.deleteBySessionId(session.getSessionId());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session has expired"));
+            }
+            else{
+                session.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+                sessionService.updateSession(session);
+            }
 
             // check the database for session information and match if possible
-            if (sessionService.doesSessionExist(session, username)) {
-                Account account = accountService.getUserByUsername(username);
-                return ResponseEntity.status(200).body(
-                        Map.of("username", account.getUsername(),
-                                "role", account.getRole())
+            Account account = accountService.getUserByUsername(username);
+            return ResponseEntity.status(200).body(
+                    Map.of("username", account.getUsername(),
+                            "role", account.getRole())
+            );
 
-                );
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));
-            }
         }
         catch(InvalidSessionException e){
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid Session"));

@@ -36,8 +36,12 @@ public class MagicService {
         return magicRepository.findByName(name);
     }
 
+    public Magic getMagicById(int id){
+        return magicRepository.findById(id).orElse(null);
+    }
+
     public String addNewMagic(Magic newMagic) throws EmptyFieldException, DuplicateEntryException {
-        //TODO: add checks and such for null values, etc
+
         if(newMagic.getName() == null || newMagic.getName().isEmpty()){
             throw new EmptyFieldException("Name cannot be empty");
         }
