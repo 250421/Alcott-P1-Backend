@@ -9,24 +9,19 @@ import org.revature.Alcott_P1_Backend.entity.Session;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidSessionException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
-import org.revature.Alcott_P1_Backend.model.AuthenticationDTO;
 import org.revature.Alcott_P1_Backend.model.NewUserRequest;
 import org.revature.Alcott_P1_Backend.service.AccountService;
-import org.revature.Alcott_P1_Backend.service.AuthService;
 import org.revature.Alcott_P1_Backend.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -39,11 +34,6 @@ public class AccountController {
     AccountService accountService;
     @Autowired
     SessionService sessionService;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    AuthService authService;
 
 
     @PostMapping("/sign-up")
@@ -63,7 +53,7 @@ public class AccountController {
     @PostMapping("/sign-in")
     public ResponseEntity<?> login(@RequestBody NewUserRequest request, HttpServletRequest httpRequest) {
         try {
-            Authentication auth = authService.authenticateUser(request.getUsername(), request.getPassword());
+            Authentication auth = accountService.authenticateUser(request.getUsername(), request.getPassword());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             // Create session
@@ -142,11 +132,15 @@ public class AccountController {
             if (username == null || session == null)
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session is not valid"));
 
+            request.getSession().
+
             // check the database for session information and match if possible
             if (sessionService.doesSessionExist(session, username)) {
                 Account account = accountService.getUserByUsername(username);
                 return ResponseEntity.status(200).body(
-                        Map.of("userId", account.getId())
+                        Map.of("username", account.getUsername(),
+                                "role", account.getRole())
+
                 );
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not authenticated"));

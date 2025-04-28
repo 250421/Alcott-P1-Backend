@@ -6,6 +6,9 @@ import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordExcepti
 import org.revature.Alcott_P1_Backend.model.NewUserRequest;
 import org.revature.Alcott_P1_Backend.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +20,12 @@ public class AccountService {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(10);
 
     @Autowired
-    public AccountService(AccountRepository accountRepository){
+    private final AuthenticationManager authenticationManager;
+
+    @Autowired
+    public AccountService(AccountRepository accountRepository, AuthenticationManager authenticationManager){
         this.accountRepository = accountRepository;
+        this.authenticationManager = authenticationManager;
     }
 
     public Account createNewUser(NewUserRequest account) throws DuplicateUsernameException, InvalidUsernameOrPasswordException {
@@ -36,7 +43,7 @@ public class AccountService {
         account.setPassword(encoder.encode(account.getPassword()));
 
         return accountRepository.save(new Account(
-            account.getUsername(), account.getPassword(), "USER"
+            account.getUsername().toLowerCase(), account.getPassword(), "USER"
         ));
     }
 
@@ -58,7 +65,14 @@ public class AccountService {
     }
 
     public Account getUserByUsername(String username){
-        return accountRepository.findByUsername(username);
+        return accountRepository.findByUsername(username.toLowerCase());
+    }
+
+    public Authentication authenticateUser(String username, String password) {
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(username, password);
+
+        return authenticationManager.authenticate(authToken);
     }
 
 }

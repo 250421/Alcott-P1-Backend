@@ -1,7 +1,11 @@
 package org.revature.Alcott_P1_Backend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "magics")
 public class Magic {
@@ -13,42 +17,14 @@ public class Magic {
     @Column(unique = true)
     private String name;
 
-    // private Image? image;
+    // private Blob? image;
 
     private String description;
 
     private int stock;
 
-    public Long getId() {
-        return Id;
-    }
+    private float price;
 
-    public void setId(Long id) {
-        Id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
+    private String category;
 
 }
