@@ -71,4 +71,18 @@ public class MagicController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("A magic with this name already exists");
         }
     }
+
+    @PostMapping("/admin/delete-magics")
+    public ResponseEntity<String> deleteMagics(@RequestBody Magic[] selectedMagics, HttpServletRequest request) {
+        //TODO: add correct error responses
+        try {
+            return ResponseEntity.status(200).body(
+                    magicService.deleteMagics(selectedMagics)
+            );
+        }
+        catch(Exception e){
+            return ResponseEntity.status(400).body("An unexpected error has occurred");
+        }
+
+    }
 }

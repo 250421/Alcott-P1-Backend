@@ -62,4 +62,12 @@ public class MagicService {
 
         return magicRepository.save(newMagic).getName();
     }
+
+    public String deleteMagics(Magic[] selectedMagics){
+        for(Magic m : selectedMagics){
+            magicRepository.delete(m);
+        }
+
+        return "success";
+    }
 }
