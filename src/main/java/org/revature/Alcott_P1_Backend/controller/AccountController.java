@@ -135,7 +135,7 @@ public class AccountController {
 
 
     @GetMapping("/checkAuthentication")
-    public ResponseEntity<?> checkSession(HttpServletRequest request) {
+    public ResponseEntity<?> checkSession(HttpServletRequest request, HttpServletResponse response) {
         try {
             if(request.getSession(false) == null){
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session has expired"));
@@ -155,12 +155,15 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Session has expired"));
             }
             else{
-                session.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+                session.setExpiresAt(LocalDateTime.now().plusMinutes(30));
                 sessionService.updateSession(session);
             }
 
             // check the database for session information and match if possible
             Account account = accountService.getUserByUsername(username);
+            Cookie cookie = request.getCookies()[0];
+            cookie.setMaxAge(30 * 60);
+            
             return ResponseEntity.status(200).body(
                     Map.of("username", account.getUsername(),
                             "role", account.getRole())

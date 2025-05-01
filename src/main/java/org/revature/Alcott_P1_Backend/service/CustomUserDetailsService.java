@@ -15,12 +15,22 @@ import java.util.Collections;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    public CustomUserDetailsService(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        if (username == null || username.trim().isEmpty()) {
+            throw new UsernameNotFoundException("Username cannot be null or empty");
+        }
         Account account = accountRepository.findByUsername(username);
+        if (account == null) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
 
         return new User(
                 account.getUsername(),

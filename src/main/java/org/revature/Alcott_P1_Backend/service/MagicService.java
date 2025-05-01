@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 
 @Service
+@Transactional
 public class MagicService {
 
     private final MagicRepository magicRepository;
@@ -76,6 +77,10 @@ public class MagicService {
     
         if (magicRepository.existsByName(newMagic.getName())) {
             throw new DuplicateEntryException("A magic with this name already exists in the database");
+        }
+
+        if(newMagic.getId() == -2){
+            newMagic.setId(null);
         }
     
         return magicRepository.save(newMagic).getName();
