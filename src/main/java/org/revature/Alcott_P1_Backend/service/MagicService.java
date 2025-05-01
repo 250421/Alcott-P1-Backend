@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
+
 import java.util.List;
 
 @Service
@@ -25,49 +27,70 @@ public class MagicService {
     }
 
     public List<Magic> getMagicCategory(String category) throws EmptyFieldException {
-        // null or empty check
-        if(category == null || category.isEmpty()){
-            throw new EmptyFieldException("category cannot be empty");
+        if (category == null || category.isEmpty()) {
+            throw new EmptyFieldException("Category cannot be empty");
         }
-        return magicRepository.findAllByCategory(category);
+        List<Magic> magics = magicRepository.findAllByCategory(category);
+        if (magics.isEmpty()) {
+            throw new IllegalArgumentException("No magics found for the given category");
+        }
+        return magics;
     }
 
     public Magic getMagicByName(String name){
-        return magicRepository.findByName(name);
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be null or empty");
+        }
+        Magic magic = magicRepository.findByName(name);
+        if (magic == null) {
+            throw new IllegalArgumentException("No magic found with the given name");
+        }
+        return magic;
     }
 
     public Magic getMagicById(int id){
-        return magicRepository.findById(id).orElse(null);
+        if (id <= 0) {
+            throw new IllegalArgumentException("ID must be a positive integer");
+        }
+        return magicRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("No magic found with the given ID"));    
     }
 
+    @Transactional
     public String addNewMagic(Magic newMagic) throws EmptyFieldException, DuplicateEntryException {
 
-        if(newMagic.getName() == null || newMagic.getName().isEmpty()){
+        if (newMagic == null) {
+            throw new IllegalArgumentException("Magic object cannot be null");
+        }
+        if (newMagic.getName() == null || newMagic.getName().isEmpty()) {
             throw new EmptyFieldException("Name cannot be empty");
         }
-        if(newMagic.getDescription() == null || newMagic.getDescription().isEmpty()){
+        if (newMagic.getDescription() == null || newMagic.getDescription().isEmpty()) {
             newMagic.setDescription("No description provided");
         }
-        if(newMagic.getCategory() == null || newMagic.getCategory().isEmpty()){
+        if (newMagic.getCategory() == null || newMagic.getCategory().isEmpty()) {
             throw new EmptyFieldException("Category cannot be empty");
         }
-        if(newMagic.getPrice() == 0){
+        if (newMagic.getPrice() <= 0) {
             newMagic.setPrice(999);
         }
-
-        // Check if there is one already in the database
-        if(magicRepository.existsByName(newMagic.getName())){
+    
+        if (magicRepository.existsByName(newMagic.getName())) {
             throw new DuplicateEntryException("A magic with this name already exists in the database");
         }
-
+    
         return magicRepository.save(newMagic).getName();
     }
 
     public String deleteMagics(Magic[] selectedMagics){
-        for(Magic m : selectedMagics){
+        if (selectedMagics == null || selectedMagics.length == 0) {
+            throw new IllegalArgumentException("Selected magics cannot be null or empty");
+        }
+        for (Magic m : selectedMagics) {
+            if (!magicRepository.existsById(m.getId().intValue())) {
+                throw new IllegalArgumentException("Magic with ID " + m.getId() + " does not exist");
+            }
             magicRepository.delete(m);
         }
-
         return "success";
     }
 }
