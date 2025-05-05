@@ -5,7 +5,6 @@ import org.revature.Alcott_P1_Backend.exception.DuplicateEntryException;
 import org.revature.Alcott_P1_Backend.exception.EmptyFieldException;
 import org.revature.Alcott_P1_Backend.repository.MagicRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
@@ -81,6 +80,32 @@ public class MagicService {
 
         if(newMagic.getId() == -2){
             newMagic.setId(null);
+        }
+    
+        return magicRepository.save(newMagic).getName();
+    }
+
+    @Transactional
+    public String editMagic(Magic newMagic) throws EmptyFieldException, DuplicateEntryException {
+
+        if (newMagic == null) {
+            throw new IllegalArgumentException("Magic object cannot be null");
+        }
+        if (newMagic.getName() == null || newMagic.getName().isEmpty()) {
+            throw new EmptyFieldException("Name cannot be empty");
+        }
+        if (newMagic.getDescription() == null || newMagic.getDescription().isEmpty()) {
+            newMagic.setDescription("No description provided");
+        }
+        if (newMagic.getCategory() == null || newMagic.getCategory().isEmpty()) {
+            throw new EmptyFieldException("Category cannot be empty");
+        }
+        if (newMagic.getPrice() <= 0) {
+            newMagic.setPrice(999);
+        }
+    
+        if (!magicRepository.existsByName(newMagic.getName())) {
+            throw new DuplicateEntryException("There is no magic with this name in the database");
         }
     
         return magicRepository.save(newMagic).getName();

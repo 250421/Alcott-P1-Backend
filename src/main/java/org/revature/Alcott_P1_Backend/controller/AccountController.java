@@ -15,7 +15,6 @@ import org.revature.Alcott_P1_Backend.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,16 +36,16 @@ public class AccountController {
 
 
     @PostMapping("/sign-up")
-    public ResponseEntity<String> registerNewUser(@RequestBody NewUserRequest newUser) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
+    public ResponseEntity<?> registerNewUser(@RequestBody NewUserRequest newUser) throws InvalidUsernameOrPasswordException, DuplicateUsernameException {
         try {
             accountService.createNewUser(newUser);
-            return ResponseEntity.status(201).body("User created successfully");
+            return ResponseEntity.status(201).body(Map.of("message", "User created successfully"));
         }
         catch (InvalidUsernameOrPasswordException e){
-            return ResponseEntity.status(400).body("Invalid username or password");
+            return ResponseEntity.status(400).body(Map.of("message", "Invalid username or password"));
         }
         catch (DuplicateUsernameException e){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "Username already exists"));
         }
     }
 

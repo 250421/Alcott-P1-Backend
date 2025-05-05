@@ -4,7 +4,6 @@ import org.revature.Alcott_P1_Backend.entity.Account;
 import org.revature.Alcott_P1_Backend.entity.Session;
 import org.revature.Alcott_P1_Backend.exception.InvalidSessionException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
-import org.revature.Alcott_P1_Backend.model.AuthenticationDTO;
 import org.revature.Alcott_P1_Backend.repository.AccountRepository;
 import org.revature.Alcott_P1_Backend.repository.CustomSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Service

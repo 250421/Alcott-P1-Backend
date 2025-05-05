@@ -1,7 +1,6 @@
 package org.revature.Alcott_P1_Backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.websocket.server.PathParam;
 import org.revature.Alcott_P1_Backend.entity.Magic;
 import org.revature.Alcott_P1_Backend.exception.DuplicateEntryException;
 import org.revature.Alcott_P1_Backend.exception.EmptyFieldException;
@@ -57,32 +56,45 @@ public class MagicController {
     }
 
     @PostMapping("/admin/add-magic")
-    public ResponseEntity<String> addMagic(@RequestBody Magic newMagic, HttpServletRequest request) {
-        //TODO: add correct error responses
+    public ResponseEntity<?> addMagic(@RequestBody Magic newMagic, HttpServletRequest request) {
         try {
-            return ResponseEntity.status(200).body(
+            return ResponseEntity.status(201).body(
                     magicService.addNewMagic(newMagic)
             );
         }
         catch(EmptyFieldException e){
-            return ResponseEntity.status(400).body("Required fields cannot be empty");
+            return ResponseEntity.status(400).body(Map.of("message", "Required fields cannot be empty"));
         }
         catch(DuplicateEntryException e){
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("A magic with this name already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "A magic with this name already exists"));
         }
     }
 
     @PostMapping("/admin/delete-magics")
-    public ResponseEntity<String> deleteMagics(@RequestBody Magic[] selectedMagics, HttpServletRequest request) {
-        //TODO: add correct error responses
+    public ResponseEntity<?> deleteMagics(@RequestBody Magic[] selectedMagics, HttpServletRequest request) {
         try {
             return ResponseEntity.status(200).body(
                     magicService.deleteMagics(selectedMagics)
             );
         }
         catch(Exception e){
-            return ResponseEntity.status(400).body("An unexpected error has occurred");
+            return ResponseEntity.status(400).body(Map.of("message", "An error occurred while deleting magics"));
         }
 
+    }
+
+    @PostMapping("/admin/update-magic")
+    public ResponseEntity<?> editMagic(@RequestBody Magic newMagic, HttpServletRequest request) {
+        try {
+            return ResponseEntity.status(200).body(
+                    magicService.editMagic(newMagic)
+            );
+        }
+        catch(EmptyFieldException e){
+            return ResponseEntity.status(400).body(Map.of("message", "Required fields cannot be empty"));
+        }
+        catch(DuplicateEntryException e){
+            return ResponseEntity.status(404).body(Map.of("message", "The magic you are trying to edit does not exist"));
+        }
     }
 }

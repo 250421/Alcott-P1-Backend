@@ -2,7 +2,6 @@ package org.revature.Alcott_P1_Backend;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.revature.Alcott_P1_Backend.entity.Account;
 import org.revature.Alcott_P1_Backend.exception.DuplicateUsernameException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;

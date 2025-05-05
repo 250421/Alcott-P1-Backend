@@ -19,9 +19,7 @@ import org.revature.Alcott_P1_Backend.exception.InvalidSessionException;
 import org.revature.Alcott_P1_Backend.exception.InvalidUsernameOrPasswordException;
 import org.revature.Alcott_P1_Backend.repository.AccountRepository;
 import org.revature.Alcott_P1_Backend.repository.CustomSessionRepository;
-import org.revature.Alcott_P1_Backend.service.AccountService;
 import org.revature.Alcott_P1_Backend.service.SessionService;
-import org.springframework.security.authentication.AuthenticationManager;
 
 public class SessionServiceTests {
 

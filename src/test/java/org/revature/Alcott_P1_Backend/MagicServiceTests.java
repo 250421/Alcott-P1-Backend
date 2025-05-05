@@ -169,4 +169,44 @@ class MagicServiceTests {
         assertThrows(IllegalArgumentException.class, () -> magicService.deleteMagics(magics));
     }
 
+    @Test
+    void editMagic_ShouldEditMagic_WhenValidInput() throws EmptyFieldException, DuplicateEntryException {
+        Magic updatedMagic = new Magic(1L, "Fireball", "An updated description", 1, 1, "Attack Magic", "");
+
+        when(magicRepository.existsByName("Fireball")).thenReturn(true);
+        when(magicRepository.save(updatedMagic)).thenReturn(updatedMagic);
+
+        String result = magicService.editMagic(updatedMagic);
+
+        assertEquals("Fireball", result);
+        verify(magicRepository, times(1)).save(updatedMagic);
+    }
+
+    @Test
+    void editMagic_ShouldThrowException_WhenMagicIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> magicService.editMagic(null));
+    }
+
+    @Test
+    void editMagic_ShouldThrowException_WhenNameIsEmpty() {
+        Magic updatedMagic = new Magic(1L, "", "An updated description", 1, 1, "Attack Magic", "");
+
+        assertThrows(EmptyFieldException.class, () -> magicService.editMagic(updatedMagic));
+    }
+
+    @Test
+    void editMagic_ShouldThrowException_WhenCategoryIsEmpty() {
+        Magic updatedMagic = new Magic(1L, "Fireball", "An updated description", 1, 1, "", "");
+
+        assertThrows(EmptyFieldException.class, () -> magicService.editMagic(updatedMagic));
+    }
+
+    @Test
+    void editMagic_ShouldThrowException_WhenMagicDoesNotExist() {
+        Magic updatedMagic = new Magic(1L, "Nonexistent", "An updated description", 1, 1, "Attack Magic", "");
+        when(magicRepository.existsByName("Nonexistent")).thenReturn(false);
+
+        assertThrows(DuplicateEntryException.class, () -> magicService.editMagic(updatedMagic));
+    }
+
 }
